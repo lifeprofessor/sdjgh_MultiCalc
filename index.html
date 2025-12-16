@@ -56,6 +56,12 @@
           <!-- 1) 수업시수 -->
           <div class="input-group">
             <h3>1) 수업시수 (최대 25점)</h3>
+            <p class="info-text">
+              ᆞ 6개월이상일 경우:좌측점수<br>
+              ᆞ 학기당 수업시수가 다를 경우:(1학기점수+2학기점수)/2<br>
+              ᆞ 교무부장, 진로, 보건, 사서, 전문상담 교사는 평균시수로 인정함.<br>
+              ᆞ 평균시수 ±0.5을 동일급간으로 함.
+            </p>
             <div class="radio-group">
               <label><input type="radio" name="hours" value="18+"> 18시간 이상 (25점)</label>
               <label><input type="radio" name="hours" value="17"> 17시간 (24점)</label>
@@ -72,7 +78,13 @@
           <!-- 2) 다과목 지도 -->
           <div class="input-group">
             <h3>2) 다과목 지도 (최대 4점)</h3>
-            <p class="info-text">학기별 기본점수 1점 (과목이 있어야 함). <br>과목수별 점수: 1개 0.4점, 2개 0.7점, 3개 1점. <br>세특 500자: 감점 없음, 250자: -0.1점. <br>시험 없으면 -0.1점</p>
+            <p class="info-text">
+                ᆞ 학기별 기본점수 1점 (성적산출 과목에 한함. 단, 창체진로 과목은 제외함.) <br>
+                ᆞ 과목수별 점수: 1개 0.4점, 2개 0.7점, 3개 1점. <br>
+                ᆞ 세특 500자: 감점 없음, 250자: -0.1점. <br>
+                ᆞ 시험 없으면 -0.1점
+            </p>
+            
             
             <div class="semester-subjects">
               <div class="semester-block">
@@ -221,6 +233,10 @@
 
               <!-- 비담임 옵션 -->
               <div id="nonHomeroomOptions" class="sub-options" style="display: none;">
+                <p class="info-text" style="font-size: 0.85em; color: #666; margin-bottom: 10px;">
+                  ᆞ 담당업무 영역 총점 30점을 초과할 수 없음.<br>
+                  &nbsp;&nbsp;: 초과하는 경우엔, 곤란업무 및 이중업무 가산점 항목에서 1개만 선택함.
+                </p>
                 <h4>비담임 트랙 선택</h4>
                 <div class="radio-group">
                   <label><input type="radio" name="nonHomeroomTrack" value="senior"> 부장/정년 트랙</label>
@@ -260,12 +276,14 @@
 
             <div class="input-group">
               <h3>4) 동아리 활동</h3>
+              
               <div class="radio-group">
                 <label><input type="radio" name="club" value="none" checked> 없음 (0점)</label>
                 <label><input type="radio" name="club" value="regular"> 정규 동아리 12개월 (2.0점)</label>
                 <label><input type="radio" name="club" value="regularHalf"> 정규 동아리 한학기만 (1.0점)</label>
                 <label><input type="radio" name="club" value="autonomous"> 자율 동아리 12개월 (0.5점)</label>
               </div>
+              
             </div>
 
             <div class="input-group">
