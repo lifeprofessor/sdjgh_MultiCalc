@@ -557,6 +557,19 @@ input[type="number"]:focus, input[type="text"]:focus {
   font-size: 0.95em;
 }
 
+.subject-table input[type="radio"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: #667eea;
+}
+
+.subject-table label {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: #495057;
+}
+
 .subject-table input[type="checkbox"] {
   cursor: pointer;
   width: 18px;

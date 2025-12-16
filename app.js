@@ -7,10 +7,9 @@ let state = {
     hoursPenalty: false,
     hoursDifferent: false,
     multiSubject: {
-      sem1: [],  // {name, isGraded, isCreativeCareer, hasDetail, hasExam}
+      sem1: [],  // {name, detailLength, hasExam} - detailLength: '500', '250', or ''
       sem2: []
     },
-    oneSemesterBonus: true,
     classOpen: 0
   },
   life: {
@@ -69,158 +68,148 @@ function computeMultiSubject(multiSubjectData) {
     breakdown: [],
     warnings: [],
     details: {
-      sem1Eligible: [],
-      sem2Eligible: [],
-      yearLong: [],
-      oneSemester: [],
-      yearLongCount: 0,
-      oneSemesterCount: 0,
-      stats: {
-        detailAndExam: 0,
-        detailOnly: 0,
-        examOnly: 0,
-        neither: 0
-      }
+      sem1Subjects: [],
+      sem2Subjects: [],
+      sem1Count: 0,
+      sem2Count: 0
     }
   };
 
-  // 1학기 유효 과목 추출
-  const sem1EligibleSet = new Set();
-  const sem1Map = new Map();  // 과목별 정보 저장
-  
+  // 1학기 유효 과목 추출 (과목명이 있는 것만)
+  const sem1Valid = [];
   for (const subject of multiSubjectData.sem1) {
     const normalized = normalizeSubjectName(subject.name);
-    if (!normalized) continue;
-    
-    // 유효 조건: 성적산출 && !창체-진로
-    if (subject.isGraded && !subject.isCreativeCareer) {
-      if (sem1EligibleSet.has(normalized)) {
-        result.warnings.push(`[1학기] "${subject.name}" 과목이 중복되어 1개로만 계산됩니다.`);
-      } else {
-        sem1EligibleSet.add(normalized);
-        sem1Map.set(normalized, subject);
-      }
+    if (normalized) {
+      sem1Valid.push({
+        name: normalized,
+        detailLength: subject.detailLength || '',
+        hasExam: subject.hasExam || false
+      });
     }
   }
 
   // 2학기 유효 과목 추출
-  const sem2EligibleSet = new Set();
-  const sem2Map = new Map();
-  
+  const sem2Valid = [];
   for (const subject of multiSubjectData.sem2) {
     const normalized = normalizeSubjectName(subject.name);
-    if (!normalized) continue;
+    if (normalized) {
+      sem2Valid.push({
+        name: normalized,
+        detailLength: subject.detailLength || '',
+        hasExam: subject.hasExam || false
+      });
+    }
+  }
+
+  result.details.sem1Subjects = sem1Valid.map(s => s.name);
+  result.details.sem2Subjects = sem2Valid.map(s => s.name);
+  result.details.sem1Count = sem1Valid.length;
+  result.details.sem2Count = sem2Valid.length;
+
+  // 학기별 점수 계산
+  let totalScore = 0;
+
+  // 1학기 점수 계산
+  if (sem1Valid.length > 0) {
+    const subjectCount = sem1Valid.length;
+    let sem1Score = 1.0; // 기본점수 1점 (과목이 1개라도 있으면)
     
-    if (subject.isGraded && !subject.isCreativeCareer) {
-      if (sem2EligibleSet.has(normalized)) {
-        result.warnings.push(`[2학기] "${subject.name}" 과목이 중복되어 1개로만 계산됩니다.`);
-      } else {
-        sem2EligibleSet.add(normalized);
-        sem2Map.set(normalized, subject);
+    // 과목별 추가점수 계산
+    // 1개: 0.4점, 2개: 0.7점, 3개: 1.0점
+    // 기본 1점 + 추가점수로 계산
+    let additionalScore = 0;
+    if (subjectCount === 1) {
+      additionalScore = 0.4;
+    } else if (subjectCount === 2) {
+      additionalScore = 0.7;
+    } else if (subjectCount >= 3) {
+      additionalScore = 1.0;
+    }
+    
+    // 기본점수 1점 + 추가점수
+    sem1Score = 1.0 + additionalScore;
+    
+    // 세특 및 시험 감점 계산
+    let penalty = 0;
+    for (const subject of sem1Valid) {
+      // 세특 감점: 500자 선택시 감점 없음, 250자 선택시 -0.1점, 선택 안 하면 -0.1점
+      if (subject.detailLength === '250' || subject.detailLength === '') {
+        penalty += 0.1;
+      }
+      
+      // 시험 없으면 -0.1점
+      if (!subject.hasExam) {
+        penalty += 0.1;
       }
     }
-  }
-
-  // 1년 지도 과목 (교집합)
-  const yearLongSet = new Set();
-  for (const name of sem1EligibleSet) {
-    if (sem2EligibleSet.has(name)) {
-      yearLongSet.add(name);
-    }
-  }
-
-  // 한학기만 지도 과목 (합집합 - 교집합)
-  const oneSemesterSet = new Set();
-  for (const name of sem1EligibleSet) {
-    if (!yearLongSet.has(name)) {
-      oneSemesterSet.add(name);
-    }
-  }
-  for (const name of sem2EligibleSet) {
-    if (!yearLongSet.has(name)) {
-      oneSemesterSet.add(name);
-    }
-  }
-
-  // 결과 저장
-  result.details.sem1Eligible = Array.from(sem1EligibleSet);
-  result.details.sem2Eligible = Array.from(sem2EligibleSet);
-  result.details.yearLong = Array.from(yearLongSet);
-  result.details.oneSemester = Array.from(oneSemesterSet);
-  result.details.yearLongCount = yearLongSet.size;
-  result.details.oneSemesterCount = oneSemesterSet.size;
-
-  // 세특/시험 조합 통계 계산
-  const allEligibleSubjects = [];
-  for (const [name, subject] of sem1Map) {
-    allEligibleSubjects.push(subject);
-  }
-  for (const [name, subject] of sem2Map) {
-    if (!sem1Map.has(name)) {  // 중복 방지
-      allEligibleSubjects.push(subject);
-    }
-  }
-
-  for (const subject of allEligibleSubjects) {
-    if (subject.hasDetail && subject.hasExam) {
-      result.details.stats.detailAndExam++;
-    } else if (subject.hasDetail) {
-      result.details.stats.detailOnly++;
-    } else if (subject.hasExam) {
-      result.details.stats.examOnly++;
-    } else {
-      result.details.stats.neither++;
-    }
-  }
-
-  // 점수 계산
-  const yearLongCount = result.details.yearLongCount;
-  const rubric = RUBRIC.teaching.multiSubject;
-  
-  // 기본 점수 (1년 지도 과목수 기준)
-  let baseScore = 0;
-  if (yearLongCount >= 3) {
-    baseScore = rubric.yearLongMapping[3];
-  } else if (yearLongCount in rubric.yearLongMapping) {
-    baseScore = rubric.yearLongMapping[yearLongCount];
-  }
-
-  // 한학기 가산
-  let bonus = 0;
-  if (state.teaching.oneSemesterBonus && result.details.oneSemesterCount > 0) {
-    bonus = rubric.oneSemesterBonus;
-  }
-
-  // 최종 점수 (cap 적용)
-  let finalScore = baseScore + bonus;
-  if (finalScore > rubric.bonusMax) {
-    finalScore = rubric.bonusMax;
-    result.warnings.push(`다과목지도 점수가 최대값 ${rubric.bonusMax}점으로 제한되었습니다.`);
-  }
-
-  result.score = finalScore;
-
-  // Breakdown 추가
-  result.breakdown.push({
-    section: '학습지도',
-    item: '다과목지도 (1년지도)',
-    selected: `${yearLongCount}과목`,
-    formula: `1년지도 ${yearLongCount}과목 → ${baseScore}점`,
-    points: baseScore,
-    note: ''
-  });
-
-  if (bonus > 0) {
+    
+    sem1Score = Math.max(0, sem1Score - penalty);
+    totalScore += sem1Score;
+    
     result.breakdown.push({
       section: '학습지도',
-      item: '다과목지도 (한학기 가산)',
-      selected: `${result.details.oneSemesterCount}과목`,
-      formula: `+${rubric.oneSemesterBonus}`,
-      points: bonus,
-      note: `최대 ${rubric.bonusMax}점`
+      item: '다과목지도 (1학기)',
+      selected: `${subjectCount}과목`,
+      formula: `기본 1점 + 추가 ${additionalScore}점${penalty > 0 ? ` - 감점 ${penalty.toFixed(1)}점` : ''}`,
+      points: sem1Score,
+      note: ''
     });
   }
 
+  // 2학기 점수 계산
+  if (sem2Valid.length > 0) {
+    const subjectCount = sem2Valid.length;
+    let sem2Score = 1.0; // 기본점수 1점 (과목이 1개라도 있으면)
+    
+    // 과목별 추가점수 계산
+    // 1개: 0.4점, 2개: 0.7점, 3개: 1.0점
+    // 기본 1점 + 추가점수로 계산
+    let additionalScore = 0;
+    if (subjectCount === 1) {
+      additionalScore = 0.4;
+    } else if (subjectCount === 2) {
+      additionalScore = 0.7;
+    } else if (subjectCount >= 3) {
+      additionalScore = 1.0;
+    }
+    
+    // 기본점수 1점 + 추가점수
+    sem2Score = 1.0 + additionalScore;
+    
+    // 세특 및 시험 감점 계산
+    let penalty = 0;
+    for (const subject of sem2Valid) {
+      // 세특 감점: 500자 선택시 감점 없음, 250자 선택시 -0.1점, 선택 안 하면 -0.1점
+      if (subject.detailLength === '250' || subject.detailLength === '') {
+        penalty += 0.1;
+      }
+      
+      // 시험 없으면 -0.1점
+      if (!subject.hasExam) {
+        penalty += 0.1;
+      }
+    }
+    
+    sem2Score = Math.max(0, sem2Score - penalty);
+    totalScore += sem2Score;
+    
+    result.breakdown.push({
+      section: '학습지도',
+      item: '다과목지도 (2학기)',
+      selected: `${subjectCount}과목`,
+      formula: `기본 1점 + 추가 ${additionalScore}점${penalty > 0 ? ` - 감점 ${penalty.toFixed(1)}점` : ''}`,
+      points: sem2Score,
+      note: ''
+    });
+  }
+
+  // 최대 4점 제한
+  if (totalScore > RUBRIC.teaching.multiSubject.maxScore) {
+    result.warnings.push(`다과목지도 점수가 최대값 ${RUBRIC.teaching.multiSubject.maxScore}점으로 제한되었습니다.`);
+    totalScore = RUBRIC.teaching.multiSubject.maxScore;
+  }
+
+  result.score = totalScore;
   return result;
 }
 
@@ -710,7 +699,7 @@ function renderResults(result) {
 function renderMultiSubjectDetails(details) {
   const container = document.getElementById('multiSubjectDetails');
   
-  if (!details || details.yearLongCount === 0 && details.oneSemesterCount === 0) {
+  if (!details || (details.sem1Count === 0 && details.sem2Count === 0)) {
     container.innerHTML = '';
     container.style.display = 'none';
     return;
@@ -721,31 +710,13 @@ function renderMultiSubjectDetails(details) {
   let html = '<h3>다과목 지도 상세 정보</h3>';
   
   html += '<div class="detail-row">';
-  html += `<strong>1학기 유효 과목 (${details.sem1Eligible.length}개):</strong> `;
-  html += details.sem1Eligible.length > 0 ? details.sem1Eligible.join(', ') : '없음';
+  html += `<strong>1학기 과목 (${details.sem1Count}개):</strong> `;
+  html += details.sem1Subjects.length > 0 ? details.sem1Subjects.join(', ') : '없음';
   html += '</div>';
   
   html += '<div class="detail-row">';
-  html += `<strong>2학기 유효 과목 (${details.sem2Eligible.length}개):</strong> `;
-  html += details.sem2Eligible.length > 0 ? details.sem2Eligible.join(', ') : '없음';
-  html += '</div>';
-  
-  html += '<div class="detail-row">';
-  html += `<strong>1년 지도 과목 (${details.yearLongCount}개):</strong> `;
-  html += details.yearLong.length > 0 ? details.yearLong.join(', ') : '없음';
-  html += '</div>';
-  
-  html += '<div class="detail-row">';
-  html += `<strong>한학기만 지도 과목 (${details.oneSemesterCount}개):</strong> `;
-  html += details.oneSemester.length > 0 ? details.oneSemester.join(', ') : '없음';
-  html += '</div>';
-  
-  html += '<div class="detail-row">';
-  html += '<strong>세특/시험 조합 통계:</strong> ';
-  html += `세특&시험 ${details.stats.detailAndExam}개, `;
-  html += `세특만 ${details.stats.detailOnly}개, `;
-  html += `시험만 ${details.stats.examOnly}개, `;
-  html += `둘다없음 ${details.stats.neither}개`;
+  html += `<strong>2학기 과목 (${details.sem2Count}개):</strong> `;
+  html += details.sem2Subjects.length > 0 ? details.sem2Subjects.join(', ') : '없음';
   html += '</div>';
   
   container.innerHTML = html;
@@ -759,9 +730,7 @@ function renderMultiSubjectDetails(details) {
 function addSubjectRow(semester) {
   const subject = {
     name: '',
-    isGraded: true,
-    isCreativeCareer: false,
-    hasDetail: false,
+    detailLength: '',  // '500', '250', or ''
     hasExam: false
   };
   
@@ -793,11 +762,24 @@ function renderSubjectTable(semester, subjects) {
   
   subjects.forEach((subject, index) => {
     const tr = document.createElement('tr');
+    const detailName = `detail-${semester}-${index}`;
+    const detail500Checked = subject.detailLength === '500' ? 'checked' : '';
+    const detail250Checked = subject.detailLength === '250' ? 'checked' : '';
+    
     tr.innerHTML = `
-      <td><input type="text" class="subject-name" value="${subject.name}" data-semester="${semester}" data-index="${index}"></td>
-      <td><input type="checkbox" class="subject-graded" ${subject.isGraded ? 'checked' : ''} data-semester="${semester}" data-index="${index}"></td>
-      <td><input type="checkbox" class="subject-creative" ${subject.isCreativeCareer ? 'checked' : ''} data-semester="${semester}" data-index="${index}"></td>
-      <td><input type="checkbox" class="subject-detail" ${subject.hasDetail ? 'checked' : ''} data-semester="${semester}" data-index="${index}"></td>
+      <td><input type="text" class="subject-name" value="${subject.name || ''}" data-semester="${semester}" data-index="${index}" placeholder="과목명"></td>
+      <td>
+        <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+          <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+            <input type="radio" name="${detailName}" class="subject-detail" value="500" ${detail500Checked} data-semester="${semester}" data-index="${index}">
+            <span>500자</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+            <input type="radio" name="${detailName}" class="subject-detail" value="250" ${detail250Checked} data-semester="${semester}" data-index="${index}">
+            <span>250자</span>
+          </label>
+        </div>
+      </td>
       <td><input type="checkbox" class="subject-exam" ${subject.hasExam ? 'checked' : ''} data-semester="${semester}" data-index="${index}"></td>
       <td><button type="button" class="btn-delete" data-semester="${semester}" data-index="${index}">삭제</button></td>
     `;
@@ -887,7 +869,6 @@ function resetState() {
         sem1: [],
         sem2: []
       },
-      oneSemesterBonus: true,
       classOpen: 0
     },
     life: {
@@ -919,11 +900,13 @@ function resetState() {
 
 function loadStateToUI() {
   // 학습지도
-  document.querySelector(`input[name="hours"][value="${state.teaching.hoursBand}"]`).checked = true;
+  const hoursInput = document.querySelector(`input[name="hours"][value="${state.teaching.hoursBand}"]`);
+  if (hoursInput) {
+    hoursInput.checked = true;
+  }
   document.getElementById('hoursPenalty').checked = state.teaching.hoursPenalty;
   document.getElementById('hoursDifferent').checked = state.teaching.hoursDifferent;
   renderSubjectTables();
-  document.getElementById('oneSemesterBonus').checked = state.teaching.oneSemesterBonus;
   document.getElementById('classOpen').value = state.teaching.classOpen;
   
   // 생활지도
@@ -968,11 +951,6 @@ function initEventListeners() {
   
   document.getElementById('hoursDifferent').addEventListener('change', (e) => {
     state.teaching.hoursDifferent = e.target.checked;
-    recalc();
-  });
-  
-  document.getElementById('oneSemesterBonus').addEventListener('change', (e) => {
-    state.teaching.oneSemesterBonus = e.target.checked;
     recalc();
   });
   
@@ -1117,12 +1095,10 @@ function handleSubjectInput(e) {
   
   if (target.classList.contains('subject-name')) {
     subject.name = target.value;
-  } else if (target.classList.contains('subject-graded')) {
-    subject.isGraded = target.checked;
-  } else if (target.classList.contains('subject-creative')) {
-    subject.isCreativeCareer = target.checked;
   } else if (target.classList.contains('subject-detail')) {
-    subject.hasDetail = target.checked;
+    if (target.type === 'radio' && target.checked) {
+      subject.detailLength = target.value;
+    }
   } else if (target.classList.contains('subject-exam')) {
     subject.hasExam = target.checked;
   }

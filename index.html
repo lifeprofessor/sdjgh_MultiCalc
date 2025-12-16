@@ -57,7 +57,7 @@
           <div class="input-group">
             <h3>1) 수업시수 (최대 25점)</h3>
             <div class="radio-group">
-              <label><input type="radio" name="hours" value="18+" checked> 18시간 이상 (25점)</label>
+              <label><input type="radio" name="hours" value="18+"> 18시간 이상 (25점)</label>
               <label><input type="radio" name="hours" value="17"> 17시간 (24점)</label>
               <label><input type="radio" name="hours" value="16"> 16시간, 진로, 보건교사 (23점)</label>
               <label><input type="radio" name="hours" value="15"> 15시간 (22점)</label>
@@ -72,7 +72,7 @@
           <!-- 2) 다과목 지도 -->
           <div class="input-group">
             <h3>2) 다과목 지도 (최대 4점)</h3>
-            <p class="info-text">1년 지도 과목수에 따라 점수가 결정됩니다. 유효 과목: 성적산출 과목이면서 창체-진로 과목이 아닌 것</p>
+            <p class="info-text">학기별 기본점수 1점 (과목이 있어야 함). <br>과목수별 점수: 1개 0.4점, 2개 0.7점, 3개 1점. <br>세특 500자: 감점 없음, 250자: -0.1점. <br>시험 없으면 -0.1점</p>
             
             <div class="semester-subjects">
               <div class="semester-block">
@@ -81,8 +81,6 @@
                   <thead>
                     <tr>
                       <th>과목명</th>
-                      <th>성적산출</th>
-                      <th>창체-진로</th>
                       <th>세특</th>
                       <th>시험</th>
                       <th>삭제</th>
@@ -101,7 +99,6 @@
                   <thead>
                     <tr>
                       <th>과목명</th>
-                      <th>성적산출</th>
                       <th>세특</th>
                       <th>시험</th>
                       <th>삭제</th>
@@ -113,10 +110,6 @@
                 </table>
                 <button type="button" class="btn-add" id="addSem2">+ 2학기 과목 추가</button>
               </div>
-            </div>
-
-            <div class="checkbox-group">
-              <label><input type="checkbox" id="oneSemesterBonus" checked> 한학기 지도 가산 적용 (+0.2, 최대 4.0)</label>
             </div>
           </div>
 
