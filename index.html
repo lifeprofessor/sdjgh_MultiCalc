@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2025학년도 다면평가 정량평가 점수 계산기</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>2025학년도 다면평가 정량평가 점수 계산기</h1>
+      <p class="subtitle">항목을 입력하면 실시간으로 점수가 계산됩니다</p>
+    </header>
+
+    <!-- 상단: 총점 및 영역별 요약 -->
+    <section class="summary-section">
+      <div class="total-score-card">
+        <div class="total-label">총점</div>
+        <div class="total-score" id="totalScore">0.0</div>
+        <div class="total-max">/ 100점</div>
+      </div>
+      
+      <div class="section-cards">
+        <div class="section-card">
+          <div class="section-name">① 학습지도</div>
+          <div class="section-score" id="teachingScore">0.0</div>
+          <div class="section-max">/ 30점</div>
+        </div>
+        <div class="section-card">
+          <div class="section-name">② 생활지도</div>
+          <div class="section-score" id="lifeScore">0.0</div>
+          <div class="section-max">/ 30점</div>
+        </div>
+        <div class="section-card">
+          <div class="section-name">③ 전문성개발</div>
+          <div class="section-score" id="devScore">0.0</div>
+          <div class="section-max">/ 10점</div>
+        </div>
+        <div class="section-card">
+          <div class="section-name">④ 담당업무</div>
+          <div class="section-score" id="dutyScore">0.0</div>
+          <div class="section-max">/ 30점</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 본문: 4개 영역 입력 폼 -->
+    <main class="input-sections">
+      
+      <!-- ① 학습지도 -->
+      <details class="input-section" open>
+        <summary class="section-header">① 학습지도 (최대 30점)</summary>
+        <div class="section-content">
+          
+          <!-- 1) 수업시수 -->
+          <div class="input-group">
+            <h3>1) 수업시수 (최대 25점)</h3>
+            <div class="radio-group">
+              <label><input type="radio" name="hours" value="18+" checked> 18시간 이상 (25점)</label>
+              <label><input type="radio" name="hours" value="17"> 17시간 (24점)</label>
+              <label><input type="radio" name="hours" value="16"> 16시간, 진로, 보건교사 (23점)</label>
+              <label><input type="radio" name="hours" value="15"> 15시간 (22점)</label>
+              <label><input type="radio" name="hours" value="14-"> 14시간 이하 (21점)</label>
+            </div>
+            <div class="checkbox-group">
+              <label><input type="checkbox" id="hoursPenalty"> 2개월 이상 6개월 미만 해당 (-0.5점)</label>
+              <label><input type="checkbox" id="hoursDifferent"> 1,2학기 시수 상이 (참고용)</label>
+            </div>
+          </div>
+
+          <!-- 2) 다과목 지도 -->
+          <div class="input-group">
+            <h3>2) 다과목 지도 (최대 4점)</h3>
+            <p class="info-text">1년 지도 과목수에 따라 점수가 결정됩니다. 유효 과목: 성적산출 과목이면서 창체-진로 과목이 아닌 것</p>
+            
+            <div class="semester-subjects">
+              <div class="semester-block">
+                <h4>1학기 과목</h4>
+                <table class="subject-table" id="sem1Table">
+                  <thead>
+                    <tr>
+                      <th>과목명</th>
+                      <th>성적산출</th>
+                      <th>창체-진로</th>
+                      <th>세특</th>
+                      <th>시험</th>
+                      <th>삭제</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sem1Body">
+                    <!-- 행이 동적으로 추가됨 -->
+                  </tbody>
+                </table>
+                <button type="button" class="btn-add" id="addSem1">+ 1학기 과목 추가</button>
+              </div>
+
+              <div class="semester-block">
+                <h4>2학기 과목</h4>
+                <table class="subject-table" id="sem2Table">
+                  <thead>
+                    <tr>
+                      <th>과목명</th>
+                      <th>성적산출</th>
+                      <th>세특</th>
+                      <th>시험</th>
+                      <th>삭제</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sem2Body">
+                    <!-- 행이 동적으로 추가됨 -->
+                  </tbody>
+                </table>
+                <button type="button" class="btn-add" id="addSem2">+ 2학기 과목 추가</button>
+              </div>
+            </div>
+
+            <div class="checkbox-group">
+              <label><input type="checkbox" id="oneSemesterBonus" checked> 한학기 지도 가산 적용 (+0.2, 최대 4.0)</label>
+            </div>
+          </div>
+
+          <!-- 3) 수업공개 -->
+          <div class="input-group">
+            <h3>3) 수업공개 (가산, 최대 1점)</h3>
+            <label>
+              공개 수업 횟수: 
+              <input type="number" id="classOpen" min="0" max="10" value="0" style="width: 60px;">
+              회 (0.5점/회)
+            </label>
+          </div>
+        </div>
+      </details>
+
+      <!-- ② 생활지도 -->
+      <details class="input-section">
+        <summary class="section-header">② 생활지도 (최대 30점)</summary>
+        <div class="section-content">
+          <p class="info-text">기본 27점 + 가산점</p>
+          
+          <div class="two-column-group">
+            <div class="input-group">
+              <h3>등교지도</h3>
+              <div class="radio-group">
+                <label><input type="radio" name="morning" value="none" checked> 참여 안함 (0점)</label>
+                <label><input type="radio" name="morning" value="full"> 희망 및 참여 (+1.5점)</label>
+                <label><input type="radio" name="morning" value="half"> 한학기만 담당 (+0.75점)</label>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <h3>야간자율학습지도</h3>
+              <div class="radio-group">
+                <label><input type="radio" name="night" value="none" checked> 참여 안함 (0점)</label>
+                <label><input type="radio" name="night" value="full"> 희망 및 참여 (+1.5점)</label>
+                <label><input type="radio" name="night" value="half"> 한학기만 담당 (+0.75점)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- ③ 전문성개발 -->
+      <details class="input-section">
+        <summary class="section-header">③ 전문성개발 (최대 10점)</summary>
+        <div class="section-content">
+          
+          <div class="three-column-group">
+            <div class="input-group">
+              <h3>1) 연수시간</h3>
+              <div class="radio-group">
+                <label><input type="radio" name="training" value="45+" checked> 45시간 이상 (6.5점)</label>
+                <label><input type="radio" name="training" value="30-45"> 30~45시간 미만 (5.5점)</label>
+                <label><input type="radio" name="training" value="30-"> 30시간 미만 (4.5점)</label>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <h3>2) 가산점</h3>
+              <div class="checkbox-group">
+                <label><input type="checkbox" id="devLeader"> 연구대회/교과연구/다락방 팀장 (+2.0점)</label>
+                <label><input type="checkbox" id="devMember"> 다락방 팀원 (+0.5점)</label>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <h3>3) 포상</h3>
+              <div class="radio-group">
+                <label><input type="radio" name="award" value="0" checked> 0회 (0점)</label>
+                <label><input type="radio" name="award" value="1"> 1회 (1.0점)</label>
+                <label><input type="radio" name="award" value="2+"> 2회 이상 (1.5점)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- ④ 담당업무 -->
+      <details class="input-section">
+        <summary class="section-header">④ 담당업무 (최대 30점)</summary>
+        <div class="section-content">
+          
+          <div class="two-column-group">
+            <div class="input-group">
+              <h3>1) 근무개월수</h3>
+              <div class="radio-group">
+                <label><input type="radio" name="workMonths" value="12" checked> 12개월 근무 (2.0점)</label>
+                <label><input type="radio" name="workMonths" value="12-"> 12개월 미만 (1.0점)</label>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <h3>2) 담임/비담임 선택</h3>
+              <div class="radio-group">
+                <label><input type="radio" name="dutyType" value="homeroom" checked> 담임</label>
+                <label><input type="radio" name="dutyType" value="nonHomeroom"> 비담임</label>
+              </div>
+
+              <!-- 담임 옵션 -->
+              <div id="homeroomOptions" class="sub-options">
+                <h4>담임 기간</h4>
+                <div class="radio-group">
+                  <label><input type="radio" name="homeroomPeriod" value="12" checked> 12개월 (24점)</label>
+                  <label><input type="radio" name="homeroomPeriod" value="6-12"> 6~12개월 미만 (22점)</label>
+                  <label><input type="radio" name="homeroomPeriod" value="2-6"> 2~6개월 미만 (20점)</label>
+                </div>
+              </div>
+
+              <!-- 비담임 옵션 -->
+              <div id="nonHomeroomOptions" class="sub-options" style="display: none;">
+                <h4>비담임 트랙 선택</h4>
+                <div class="radio-group">
+                  <label><input type="radio" name="nonHomeroomTrack" value="senior"> 부장/정년 트랙</label>
+                  <label><input type="radio" name="nonHomeroomTrack" value="general"> 기획/계원/진로/보건/명퇴 트랙</label>
+                </div>
+
+                <div id="seniorTrackOptions" class="sub-sub-options" style="display: none;">
+                  <h5>부장/정년 기간</h5>
+                  <div class="radio-group">
+                    <label><input type="radio" name="seniorPeriod" value="12"> 12개월 부장 (24점)</label>
+                    <label><input type="radio" name="seniorPeriod" value="6-12"> 6~12개월 미만 보직 (23점)</label>
+                    <label><input type="radio" name="seniorPeriod" value="2-6"> 2~6개월 미만 보직/정년 (22점)</label>
+                  </div>
+                </div>
+
+                <div id="generalTrackOptions" class="sub-sub-options" style="display: none;">
+                  <h5>기획/계원/진로/보건/명퇴 기간</h5>
+                  <div class="radio-group">
+                    <label><input type="radio" name="generalPeriod" value="12"> 12개월 보직 (23점)</label>
+                    <label><input type="radio" name="generalPeriod" value="6-12"> 6~12개월 미만 업무 (21점)</label>
+                    <label><input type="radio" name="generalPeriod" value="2-6"> 2~6개월 미만 업무/명퇴 (19점)</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="three-column-group">
+            <div class="input-group">
+              <h3>3) 곤란/이중업무 가산</h3>
+              <div class="radio-group">
+                <label><input type="radio" name="difficult" value="none" checked> 없음 (0점)</label>
+                <label><input type="radio" name="difficult" value="level1"> 방송/교과부장/담당+추가행정 (+0.5점)</label>
+                <label><input type="radio" name="difficult" value="level2"> 교무부장/학년부장+담임/교무기획 (+1.0점)</label>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <h3>4) 동아리 활동</h3>
+              <div class="radio-group">
+                <label><input type="radio" name="club" value="none" checked> 없음 (0점)</label>
+                <label><input type="radio" name="club" value="regular"> 정규 동아리 12개월 (2.0점)</label>
+                <label><input type="radio" name="club" value="regularHalf"> 정규 동아리 한학기만 (1.0점)</label>
+                <label><input type="radio" name="club" value="autonomous"> 자율 동아리 12개월 (0.5점)</label>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <h3>5) 상조회</h3>
+              <div class="radio-group">
+                <label><input type="radio" name="mutual" value="none" checked> 없음 (0점)</label>
+                <label><input type="radio" name="mutual" value="6+"> 6개월 이상 (1.0점)</label>
+                <label><input type="radio" name="mutual" value="6-"> 6개월 미만 (0.5점)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </main>
+
+   
+
+    <!-- 하단: 상세 산출 내역 -->
+    <section class="results-section">
+      <div class="results-header">
+        <h2>상세 산출 내역</h2>
+        <div class="total-score-mini">
+          <div class="total-label-mini">총점</div>
+          <div class="total-score-value" id="totalScoreDetail">0.0</div>
+          <div class="total-max-mini">/ 100점</div>
+        </div>
+      </div>
+      
+      <!-- 다과목 지도 상세 정보 -->
+      <div id="multiSubjectDetails" class="multi-subject-details"></div>
+
+      <!-- 전체 breakdown 테이블 -->
+      <div class="table-wrapper">
+        <table class="breakdown-table">
+          <thead>
+            <tr>
+              <th>영역</th>
+              <th>항목</th>
+              <th>선택값</th>
+              <th>산식</th>
+              <th>점수</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody id="breakdownBody">
+            <tr>
+              <td colspan="6" class="empty-state">항목을 입력하면 계산 내역이 표시됩니다</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 경고 메시지 -->
+      <div id="warnings" class="warnings"></div>
+    </section>
+
+    <footer>
+      <p>교원 평가 점수 계산기 v1.0 | 점수 규칙은 rubric.js에서 수정 가능</p>
+    </footer>
+  </div>
+
+  <script src="rubric.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
